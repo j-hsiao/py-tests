@@ -8,6 +8,6 @@ setup(
     author='Jason Hsiao',
     author_email='oaishnosaj@gmail.com',
     description='register/run tests',
-    packages=['jhsiao.tests'],
+    packages=['jhsiao', 'jhsiao.tests'],
     install_requires=['jhsiao-utils @ git+https://github.com/j-hsiao/py-utils.git']
 )

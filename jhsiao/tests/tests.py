@@ -5,7 +5,7 @@ Tests can be stored in:
     a module within a package (use the module name to run the tests)
 """
 from __future__ import print_function
-__all__ = ['Tests', 'Base']
+__all__ = ['Tests', 'Base', 'simple']
 import argparse
 import os
 import sys
@@ -17,6 +17,18 @@ class Base(object):
         pass
     def __call__(self, args):
         pass
+
+def simple(globs, prefix='test_'):
+    """Simple test that looks for tests in a dict.
+
+    It is assumed that the keys are prefixed with prefix.
+    It should be a no-args callable.
+    """
+    for k in globs:
+         if k.startswith(prefix):
+            print('---running', k, end='---\n')
+            sys.stdout.flush()
+            globs[k]()
 
 class Tests(object):
     """Class for managing test.

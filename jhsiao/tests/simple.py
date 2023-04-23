@@ -3,6 +3,7 @@
 Anything that starts with the given prefix is a valid test and should be
 callable without any arguments.  It should throw an exception on failure.
 """
+from __future__ import print_function
 __all__ = ['run']
 from importlib import import_module
 import os
@@ -34,7 +35,7 @@ def _import(name):
                 pass
     return import_module(name)
 
-def run(name, runall=False, prefix='test_'):
+def run(name, runall=False, prefix='test_', list_tests=False):
     """Run the tests in name.
 
     name: str
@@ -50,13 +51,20 @@ def run(name, runall=False, prefix='test_'):
         name, target = name.split(':', 1)
     else:
         target = None
+    if name.endswith('.py'):
+        name = os.path.normpath(name[:-3]).replace(os.sep, '.')
     item = _import(name)
+    if list_tests:
+        print(name, ':', file=sys.stderr, sep='')
     for k in dir(item):
         if not k.startswith(prefix):
             continue
-        tname = k.split('_', 1)[-1]
+        tname = k[len(prefix):]
+        if list_tests:
+            print('  ', tname, file=sys.stderr, sep='')
+            continue
         if target is None or tname == target:
-            print('running', tname)
+            print('running', tname, file=sys.stderr)
             try:
                 getattr(item, k)()
             except Exception:
@@ -74,6 +82,7 @@ if __name__ == '__main__':
         help='run all regardless of error')
     p.add_argument(
         '--prefix', default='test_', help='Prefix on name for tests to run.')
+    p.add_argument('-l', '--list', help='list discovered tests', action='store_true')
     args = p.parse_args()
     for t in args.tests:
-        run(t, args.all, args.prefix)
+        run(t, args.all, args.prefix, args.list)

@@ -48,9 +48,10 @@ def run(name, runall=False, prefix='test_', list_tests=False):
         The prefix on names of tests to run.
     """
     if ':' in name:
-        name, target = name.split(':', 1)
+        name, targets = name.split(':', 1)
+        targets = set(targets.split(','))
     else:
-        target = None
+        targets = ()
     if name.endswith('.py'):
         name = os.path.normpath(name[:-3]).replace(os.sep, '.')
     item = _import(name)
@@ -63,7 +64,7 @@ def run(name, runall=False, prefix='test_', list_tests=False):
         if list_tests:
             print('  ', tname, file=sys.stderr, sep='')
             continue
-        if target is None or tname == target:
+        if not targets or tname in targets:
             print('running', tname, file=sys.stderr)
             try:
                 getattr(item, k)()
@@ -76,7 +77,7 @@ def run(name, runall=False, prefix='test_', list_tests=False):
 if __name__ == '__main__':
     import argparse
     p = argparse.ArgumentParser()
-    p.add_argument('tests', nargs='+', help='tests to run')
+    p.add_argument('tests', nargs='+', help='tests to run, module[:test1,test2,test3,...]')
     p.add_argument(
         '-a', '--all', action='store_true',
         help='run all regardless of error')

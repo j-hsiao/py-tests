@@ -65,7 +65,7 @@ def run(name, runall=False, prefix='test_', list_tests=False):
             print('  ', tname, file=sys.stderr, sep='')
             continue
         if not targets or tname in targets:
-            print('running', tname, file=sys.stderr)
+            print('running ', tname, '...', file=sys.stderr, sep='')
             try:
                 getattr(item, k)()
             except Exception:
@@ -73,6 +73,9 @@ def run(name, runall=False, prefix='test_', list_tests=False):
                     traceback.print_exc()
                 else:
                     raise
+                print('test ', tname, ': failed', sep='', file=sys.stderr)
+            else:
+                print('test ', tname, ': passed', sep='', file=sys.stderr)
 
 if __name__ == '__main__':
     import argparse

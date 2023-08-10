@@ -70,7 +70,7 @@ def run(name, runall=False, prefix='test_', list_tests=False):
             ntried += 1
             print(
                 '------------------------------\n',
-                'running test: ', tname, '\n',
+                'running test: ', tname,
                 file=sys.stderr, sep='')
             try:
                 getattr(item, k)()
@@ -79,13 +79,13 @@ def run(name, runall=False, prefix='test_', list_tests=False):
                     traceback.print_exc()
                 else:
                     raise
-                print('\ntest', tname, ': failed', file=sys.stderr)
+                print('test', tname, ': failed', file=sys.stderr)
             else:
-                print('\ntest', tname, ': passed', file=sys.stderr)
+                print('test', tname, ': passed', file=sys.stderr)
                 npass += 1
     if ntried:
         print(
-            '------------------------------\nPassed {}/{} = {:.2f}%.'.format(
+            '------------------------------\nPassed {}/{} = {:.2f}%'.format(
                 npass, ntried, 100 * npass/ntried))
 
 if __name__ == '__main__':

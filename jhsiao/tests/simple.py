@@ -59,6 +59,7 @@ def run(name, runall=False, prefix='test_', list_tests=False):
         print(name, ':', file=sys.stderr, sep='')
     ntried = 0
     npass = 0
+    failed = []
     for k in dir(item):
         if not k.startswith(prefix):
             continue
@@ -80,13 +81,19 @@ def run(name, runall=False, prefix='test_', list_tests=False):
                 else:
                     raise
                 print('test', tname, ': failed', file=sys.stderr)
+                failed.append(tname)
             else:
                 print('test', tname, ': passed', file=sys.stderr)
                 npass += 1
     if ntried:
+        print('------------------------------', file=sys.stderr)
+        if failed:
+            print('Failed tests:', end='\n  ', file=sys.stderr)
+            print('\n  '.join(failed), file=sys.stderr)
         print(
-            '------------------------------\nPassed {}/{} = {:.2f}%'.format(
-                npass, ntried, 100 * npass/ntried))
+            'Module passed {}/{} = {:.2f}%'.format(
+                npass, ntried, 100 * npass / ntried), file=sys.stderr)
+    return failed, ntried
 
 if __name__ == '__main__':
     import argparse
@@ -99,5 +106,23 @@ if __name__ == '__main__':
         '--prefix', default='test_', help='Prefix on name for tests to run.')
     p.add_argument('-l', '--list', help='list discovered tests', action='store_true')
     args = p.parse_args()
+
+    grand_total = 0
+    failures = []
     for t in args.tests:
-        run(t, args.all, args.prefix, args.list)
+        failed, ntried = run(t, args.all, args.prefix, args.list)
+        grand_total += ntried
+        if failed:
+            failures.append((t.split(':', 1)[0], failed))
+    if len(args.tests) > 1:
+        print('==============================', file=sys.stderr)
+        passed = grand_total
+        if failures:
+            print('Failed:', file=sys.stderr)
+            for module, fails in failures:
+                print(' ', module, end='\n    ', file=sys.stderr)
+                print('\n    '.join(fails), file=sys.stderr)
+                passed -= len(fails)
+        print(
+            'Total passed {}/{} = {:.2f}%'.format(
+                passed, grand_total, 100 * passed / grand_total), file=sys.stderr)

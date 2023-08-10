@@ -3,7 +3,7 @@
 Anything that starts with the given prefix is a valid test and should be
 callable without any arguments.  It should throw an exception on failure.
 """
-from __future__ import print_function
+from __future__ import print_function, division
 __all__ = ['run']
 from importlib import import_module
 import os
@@ -57,6 +57,8 @@ def run(name, runall=False, prefix='test_', list_tests=False):
     item = _import(name)
     if list_tests:
         print(name, ':', file=sys.stderr, sep='')
+    ntried = 0
+    npass = 0
     for k in dir(item):
         if not k.startswith(prefix):
             continue
@@ -65,7 +67,11 @@ def run(name, runall=False, prefix='test_', list_tests=False):
             print('  ', tname, file=sys.stderr, sep='')
             continue
         if not targets or tname in targets:
-            print('running ', tname, '...', file=sys.stderr, sep='')
+            ntried += 1
+            print(
+                '------------------------------\n',
+                'running test: ', tname, '\n',
+                file=sys.stderr, sep='')
             try:
                 getattr(item, k)()
             except Exception:
@@ -73,9 +79,14 @@ def run(name, runall=False, prefix='test_', list_tests=False):
                     traceback.print_exc()
                 else:
                     raise
-                print('test ', tname, ': failed', sep='', file=sys.stderr)
+                print('\ntest', tname, ': failed', file=sys.stderr)
             else:
-                print('test ', tname, ': passed', sep='', file=sys.stderr)
+                print('\ntest', tname, ': passed', file=sys.stderr)
+                npass += 1
+    if ntried:
+        print(
+            '------------------------------\nPassed {}/{} = {:.2f}%.'.format(
+                npass, ntried, 100 * npass/ntried))
 
 if __name__ == '__main__':
     import argparse

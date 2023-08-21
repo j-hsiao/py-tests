@@ -108,21 +108,34 @@ if __name__ == '__main__':
     args = p.parse_args()
 
     grand_total = 0
-    failures = []
-    for t in args.tests:
-        failed, ntried = run(t, args.all, args.prefix, args.list)
-        grand_total += ntried
-        if failed:
-            failures.append((t.split(':', 1)[0], failed))
-    if len(args.tests) > 1:
+    results = []
+
+    q = list(reversed(args.tests))
+    while q:
+        t = q.pop()
+        t = t.rstrip(r'\/')
+        if os.path.isdir(t):
+            if not t.endswith('__pycache__'):
+                q.extend(
+                    [os.path.join(t, f) for f in reversed(os.listdir(t))])
+        else:
+            modulename = t.split(':', 1)[0]
+            print('==============================')
+            print('running module', modulename)
+            failed_tests, ntried = run(t, args.all, args.prefix, args.list)
+            grand_total += ntried
+            results.append((modulename, failed_tests, ntried))
+
+    if grand_total:
         print('==============================', file=sys.stderr)
         passed = grand_total
-        if failures:
-            print('Failed:', file=sys.stderr)
-            for module, fails in failures:
-                print(' ', module, end='\n    ', file=sys.stderr)
-                print('\n    '.join(fails), file=sys.stderr)
-                passed -= len(fails)
-        print(
-            'Total passed {}/{} = {:.2f}%'.format(
-                passed, grand_total, 100 * passed / grand_total), file=sys.stderr)
+        print('Module Summary:')
+        for module, fails, tries in results:
+            print('  passed {}/{} :'.format(tries-len(fails), tries), module, file=sys.stderr)
+            if fails:
+                print('    ', '\n    '.join(fails), file=sys.stderr)
+            passed -= len(fails)
+        if len(results) > 1:
+            print(
+                'Total passed {}/{} = {:.2f}%'.format(
+                    passed, grand_total, 100 * passed / grand_total), file=sys.stderr)

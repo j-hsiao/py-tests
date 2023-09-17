@@ -117,7 +117,7 @@ if __name__ == '__main__':
         if os.path.isdir(t):
             if not t.endswith('__pycache__'):
                 q.extend(
-                    [os.path.join(t, f) for f in reversed(os.listdir(t))])
+                    [os.path.join(t, f) for f in reversed(os.listdir(t)) if f.endswith('.py')])
         else:
             modulename = t.split(':', 1)[0]
             print('==============================')

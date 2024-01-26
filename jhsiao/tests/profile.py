@@ -12,8 +12,6 @@ if sys.version_info.major > 2:
 else:
     tstamp = time.time
 
-from ..utils.strutils import longest_fmt
-
 simpleparser = argparse.ArgumentParser(
     add_help=False, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 simpleparser.add_argument(
@@ -41,7 +39,7 @@ def simpletest(
     """
     if not isinstance(tests, dict):
         tests = dict(tests)
-    nfmt = longest_fmt(tests)
+    nfmt = '{{:{}}}'.format(max(map(len, tests))).format
     command = 'func('
     if args:
         command += '*args'
@@ -101,9 +99,9 @@ class Stopwatch(object):
         times = self.times
         dototal = total and not (len(self.times) == 2 and names)
         if dototal:
-            fmt = longest_fmt(names+('total',))
+            fmt = '{{:{}}}:'.format(max(map(len, names+('total',)))).format
         elif names:
-            fmt = longest_fmt(names)
+            fmt = '{{:{}}}:'.format(max(map(len, names))).format
         else:
             return
         print('------------------------------', file=file)

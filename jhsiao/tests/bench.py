@@ -59,12 +59,13 @@ def check_values(scripts, setup, eq, vname):
         sets[dst].append(names[i])
     return sets, results
 
-def run(scripts, setup, args=None, eq=None, vname='result'):
+def run(scripts={}, setup=None, args=None, eq=None, vname='result', title=None, **kwargs):
     """Run scripts and time.
 
     scripts: dict of name: str
         The str is the script to run.
-    args: an argparse namespace.
+    args: argparse.Namespace or list of args for parser().parse_args()
+        If None, then parse from sys.argv.
         relevant attrs:
             number: number of runs per measurement.
             repeat: number of measurements.
@@ -72,9 +73,15 @@ def run(scripts, setup, args=None, eq=None, vname='result'):
             tfmt: runtime format str
     eq: callable to ensure all scripts are equivalent.
         (only applicable if each script is a function)
+    kwargs:
+        specify scripts via kwargs instead.
     """
+    if title:
+        print('-'*len(title))
+        print(title)
+    kwargs.update(scripts)
     if eq is not None:
-        sets, outputs = check_values(scripts, setup, eq, vname)
+        sets, outputs = check_values(kwargs, setup, eq, vname)
         if len(sets) == 1:
             print('All results match!')
         else:
@@ -85,21 +92,25 @@ def run(scripts, setup, args=None, eq=None, vname='result'):
             raise ValueError('Values do not match')
     if args is None:
         args = parser().parse_args()
-    tfmt = args.tfmt.format
+    elif not isinstance(args, argparse.Namespace):
+        args = parser().parse_args(args)
     results = {}
     errored = {}
-    for name, script in scripts.items():
+    fmt = '{{:>{}}}:'.format(max(map(len, kwargs))).format
+    tfmt = args.tfmt.format
+    for name, script in kwargs.items():
         try:
-            results[name] = timeit.repeat(script, setup, number=args.number, repeat=args.repeat)
+            result = timeit.repeat(script, setup, number=args.number, repeat=args.repeat)
         except Exception:
             errored[name] = traceback.format_exc()
-    fmt = '{{:>{}}}:'.format(max(map(len, scripts))).format
-    for name, result in results.items():
-        print(
-            fmt(name),
-            tfmt(min(result)),
-            tfmt(sum(result)/len(result)),
-            tfmt(max(result)))
+        else:
+            if args.gui:
+                results[name] = result
+            print(
+                fmt(name),
+                tfmt(min(result)),
+                tfmt(sum(result)/len(result)),
+                tfmt(max(result)))
     if errored:
         print('Errored:')
         for name, result in errored.items():

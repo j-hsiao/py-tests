@@ -59,7 +59,7 @@ def check_values(scripts, setup, eq, vname):
         sets[dst].append(names[i])
     return sets, results
 
-def run(scripts={}, setup=None, args=None, eq=None, vname='result', title=None, **kwargs):
+def run(scripts={}, setup='', args=None, eq=None, vname='result', title=None, **kwargs):
     """Run scripts and time.
 
     scripts: dict of name: str
@@ -98,6 +98,13 @@ def run(scripts={}, setup=None, args=None, eq=None, vname='result', title=None, 
     errored = {}
     fmt = '{{:>{}}}:'.format(max(map(len, kwargs))).format
     tfmt = args.tfmt.format
+
+    headfmt = '{{:^{}}}'.format(len(tfmt(0.0))).format
+    print(
+        fmt(''),
+        headfmt('min'),
+        headfmt('mean'),
+        headfmt('max'))
     for name, script in kwargs.items():
         try:
             result = timeit.repeat(script, setup, number=args.number, repeat=args.repeat)

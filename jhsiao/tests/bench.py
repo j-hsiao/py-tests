@@ -18,6 +18,9 @@ def parser(**kwargs):
     p.add_argument('-r', '--repeat', help='number of measurements to make', type=int, default=10)
     p.add_argument('--gui', action='store_true', help='use matplotlib to display results')
     p.add_argument('--tfmt', help='time format str', default='{:7.5f}')
+    p.add_argument(
+        '--nosort', action='store_true',
+        help='display in order instead of sorting by min times.')
     return p
 
 def check_values(scripts, setup, eq, vname):
@@ -71,6 +74,7 @@ def run(scripts={}, setup='', args=None, eq=None, vname='result', title=None, **
             repeat: number of measurements.
             gui: display hist, otherwise print min, mean, max
             tfmt: runtime format str
+            nosort: don't sort resulting output
     eq: callable to ensure all scripts are equivalent.
         (only applicable if each script is a function)
     kwargs:
@@ -104,7 +108,9 @@ def run(scripts={}, setup='', args=None, eq=None, vname='result', title=None, **
         fmt(''),
         headfmt('min'),
         headfmt('mean'),
+        headfmt('med'),
         headfmt('max'))
+    printout = []
     for name, script in kwargs.items():
         try:
             result = timeit.repeat(script, setup, number=args.number, repeat=args.repeat)
@@ -113,11 +119,32 @@ def run(scripts={}, setup='', args=None, eq=None, vname='result', title=None, **
         else:
             if args.gui:
                 results[name] = result
-            print(
-                fmt(name),
-                tfmt(min(result)),
-                tfmt(sum(result)/len(result)),
-                tfmt(max(result)))
+            result.sort()
+            mid = len(result) // 2
+            med = result[mid]
+            if len(result) % 2 == 0:
+                med += result[mid-1]
+                med *= 0.5
+            if args.nosort:
+                print(
+                    fmt(name),
+                    tfmt(result[0]),
+                    tfmt(sum(result)/len(result)),
+                    tfmt(med),
+                    tfmt(result[-1]))
+            else:
+                printout.append((
+                    result[0],
+                    fmt(name),
+                    tfmt(result[0]),
+                    tfmt(sum(result)/len(result)),
+                    tfmt(med),
+                    tfmt(result[-1])))
+                print(*printout[-1][1:], end='\r')
+    if not args.nosort:
+        printout.sort(key=lambda x: x[0])
+        for item in printout:
+            print(*item[1:])
     if errored:
         print('Errored:')
         for name, result in errored.items():

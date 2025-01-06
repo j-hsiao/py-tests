@@ -115,6 +115,8 @@ def run(scripts={}, setup='', args=None, eq=None, vname='result', title=None, **
     for k, v in kwargs.items():
         if isinstance(v, str):
             kwargs[k] = textwrap.dedent(v)
+    if isinstance(setup, str):
+        setup = textwrap.dedent(setup)
     if eq is not None:
         sets, outputs, invalid = check_values(kwargs, setup, eq, vname)
         if invalid:

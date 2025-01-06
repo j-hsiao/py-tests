@@ -3,6 +3,7 @@ from __future__ import print_function
 import argparse
 import collections
 import timeit
+import textwrap
 import traceback
 from operator import eq
 
@@ -33,50 +34,77 @@ def check_values(scripts, setup, eq, vname):
     scripts: dict of name: code/func
     setup: setup code (str) or no-args func.
         If func, then setup is not run.
+    eq: callable
+        Use this to check whether the results are equivalent.
+    vname: str
+        The variable name to check.  If not defined, then ignore the
+        corresponding script.
+
+    Returns
+    sets: dict of {index: [names]}
+        Index is an index into results.  All names in the list gave an
+        equivalent result to results[index]
+    results: list
+        List of results from each script.
+    unchecked: list[str]
+        List of script names that did not define `vname` so could not
+        be checked.
     """
     gdict = {}
     if callable(setup):
-        gdictr['__bench_setupfunc'] = setup
+        gdict['__bench_setupfunc'] = setup
         setup = '__bench_setupfunc()'
     exec(setup, gdict)
     results = []
-    for name, script in scripts.items():
+    valid = []
+    invalid = []
+    names = []
+    for i, (name, script) in enumerate(scripts.items()):
+        names.append(name)
         l = gdict.copy()
         if callable(script):
             l['__bench_scriptfunc'] = script
             script = '{} = __bench_scriptfunc()'.format(vname)
         exec(script, l)
-        results.append(l[vname])
-    merges = list(range(len(results)))
-    for i in range(len(results)):
-        for j in range(i+1, len(results)):
-            if eq(results[i],results[j]):
-                merges[i] = j
-                break
-    sets = collections.defaultdict(list)
-    names = list(scripts)
-    for i in range(len(merges)):
-        dst = i
-        while merges[dst] != dst:
-            dst = merges[dst]
-        sets[dst].append(names[i])
-    return sets, results
+        try:
+            results.append(l[vname])
+            valid.append(i)
+        except KeyError:
+            print(
+                ('WARNING: Test "{}" does not define variable for'
+                 ' checking: "{}".').format(name, vname))
+            results.append(None)
+            invalid.append(name)
+    sets = {}
+    for idx in range(len(valid)):
+        key = valid[idx]
+        if key is None:
+            continue
+        sets[key] = [names[key]]
+        for jdx in range(idx+1, len(valid)):
+            j = valid[jdx]
+            if j is None:
+                continue
+            if eq(results[key], results[j]):
+                valid[jdx] = None
+                sets[key].append(names[j])
+    return sets, results, invalid
 
 def run(scripts={}, setup='', args=None, eq=None, vname='result', title=None, **kwargs):
     """Run scripts and time.
 
-    scripts: dict of name: str
-        The str is the script to run.
+    scripts: dict of str: str
+        The key is the name of the test.  The value is the script or a
+        function to run.
     args: argparse.Namespace or list of args for parser().parse_args()
         If None, then parse from sys.argv.
         relevant attrs:
             number: number of runs per measurement.
             repeat: number of measurements.
             gui: display hist, otherwise print min, mean, max
-            tfmt: runtime format str
+            tfmt: running time format str
             nosort: don't sort resulting output
-    eq: callable to ensure all scripts are equivalent.
-        (only applicable if each script is a function)
+    eq: callable to check if `vname` is equivalent for each script.
     kwargs:
         specify scripts via kwargs instead.
     """
@@ -84,8 +112,13 @@ def run(scripts={}, setup='', args=None, eq=None, vname='result', title=None, **
         print('-'*len(title))
         print(title)
     kwargs.update(scripts)
+    for k, v in kwargs.items():
+        if isinstance(v, str):
+            kwargs[k] = textwrap.dedent(v)
     if eq is not None:
-        sets, outputs = check_values(kwargs, setup, eq, vname)
+        sets, outputs, invalid = check_values(kwargs, setup, eq, vname)
+        if invalid:
+            print('Unchecked:', invalid)
         if len(sets) == 1:
             print('All results match!')
         else:

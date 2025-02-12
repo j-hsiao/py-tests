@@ -187,7 +187,10 @@ def run(scripts={}, setup='', args=None, eq=None, vname='result', title=None, **
             print(result.replace('\n', '\n\t'))
     if args.gui:
         import matplotlib.pyplot as plt
-        for name, result in results.items():
-            plt.hist(result, label=name, alpha=.5)
+        if len(results) > 3:
+            plt.hist(list(results.values()), label=list(results))
+        else:
+            for name, result in results.items():
+                plt.hist(result, label=name, alpha=.5)
         plt.legend()
         plt.show()

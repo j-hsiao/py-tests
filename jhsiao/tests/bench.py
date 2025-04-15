@@ -115,6 +115,8 @@ def run(scripts={}, setup='', args=None, eq=None, vname='result', title=None, **
     for k, v in kwargs.items():
         if isinstance(v, str):
             kwargs[k] = textwrap.dedent(v)
+    if isinstance(setup, str):
+        setup = textwrap.dedent(setup)
     if eq is not None:
         sets, outputs, invalid = check_values(kwargs, setup, eq, vname)
         if invalid:
@@ -185,7 +187,10 @@ def run(scripts={}, setup='', args=None, eq=None, vname='result', title=None, **
             print(result.replace('\n', '\n\t'))
     if args.gui:
         import matplotlib.pyplot as plt
-        for name, result in results.items():
-            plt.hist(result, label=name, alpha=.5)
+        if len(results) > 3:
+            plt.hist(list(results.values()), label=list(results))
+        else:
+            for name, result in results.items():
+                plt.hist(result, label=name, alpha=.5)
         plt.legend()
         plt.show()

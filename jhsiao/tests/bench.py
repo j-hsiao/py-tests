@@ -1,6 +1,7 @@
 """Simple benchmark code."""
 from __future__ import print_function
 import argparse
+import math
 import collections
 import timeit
 import textwrap
@@ -19,10 +20,36 @@ def parser(**kwargs):
     p.add_argument('-r', '--repeat', help='number of measurements to make', type=int, default=10)
     p.add_argument('--gui', action='store_true', help='use matplotlib to display results')
     p.add_argument('--tfmt', help='time format str', default='{:7.5f}')
+    p.add_argument('--ttest', help='perform pair-wise ttests.', action='store_true')
     p.add_argument(
         '--nosort', action='store_true',
         help='display in order instead of sorting by min times.')
     return p
+
+def stats(data):
+    mean = sum(data) / float(len(data))
+    var = sum([(d-mean)**2 for d in data]) / (len(data)-1)
+    return mean, var
+
+def ttest(data1, data2):
+    """Perform a 2-sample t test
+
+    https://en.wikipedia.org/wiki/Student%27s_t-test#Independent_two-sample_t-test
+
+    Don't assume variances are the same.
+    """
+    mean1, var1 = stats(data1)
+    mean2, var2 = stats(data2)
+
+    mv1 = var1/len(data1)
+    mv2 = var2/len(data2)
+
+    std_eff = math.sqrt(mv1 + mv2)
+    dof = (mv1 + mv2)**2 / ((mv1**2 / (len(data1)-1)) + (mv2**2 / (len(data2)-1)))
+    np.randoomm.standard_t(dof, )
+
+
+
 
 def check_values(scripts, setup, eq, vname):
     """Calculate sets where the values are the same.
@@ -194,3 +221,6 @@ def run(scripts={}, setup='', args=None, eq=None, vname='result', title=None, **
                 plt.hist(result, label=name, alpha=.5)
         plt.legend()
         plt.show()
+
+    if args.ttest:
+        pass

@@ -20,36 +20,13 @@ def parser(**kwargs):
     p.add_argument('-r', '--repeat', help='number of measurements to make', type=int, default=10)
     p.add_argument('--gui', action='store_true', help='use matplotlib to display results')
     p.add_argument('--tfmt', help='time format str', default='{:7.5f}')
-    p.add_argument('--ttest', help='perform pair-wise ttests.', action='store_true')
+    p.add_argument(
+        '--ttest', type=float, nargs='*', default=None,
+        help='perform pair-wise ttests to this significance. significance is optional(default0.05).')
     p.add_argument(
         '--nosort', action='store_true',
         help='display in order instead of sorting by min times.')
     return p
-
-def stats(data):
-    mean = sum(data) / float(len(data))
-    var = sum([(d-mean)**2 for d in data]) / (len(data)-1)
-    return mean, var
-
-def ttest(data1, data2):
-    """Perform a 2-sample t test
-
-    https://en.wikipedia.org/wiki/Student%27s_t-test#Independent_two-sample_t-test
-
-    Don't assume variances are the same.
-    """
-    mean1, var1 = stats(data1)
-    mean2, var2 = stats(data2)
-
-    mv1 = var1/len(data1)
-    mv2 = var2/len(data2)
-
-    std_eff = math.sqrt(mv1 + mv2)
-    dof = (mv1 + mv2)**2 / ((mv1**2 / (len(data1)-1)) + (mv2**2 / (len(data2)-1)))
-    np.randoomm.standard_t(dof, )
-
-
-
 
 def check_values(scripts, setup, eq, vname):
     """Calculate sets where the values are the same.
@@ -117,6 +94,60 @@ def check_values(scripts, setup, eq, vname):
                 sets[key].append(names[j])
     return sets, results, invalid
 
+
+def pairwise_ttest(results, significance=0.05):
+    """Perform pairwise ttest, print matrix.
+
+    results: dict of {testname: [timings]}
+    significance: the significance threshold for testing.  Greater
+                  than significance, assume the timings are equal
+                  (blank).
+    """
+    try:
+        import scipy
+    except ImportError:
+        import sys
+        import subprocess as sp
+        sp.Popen([sys.executable, '-m', 'pip', 'install', 'scipy']).wait()
+        import scipy
+
+    names = []
+    data = []
+    means = []
+    for k, v in results.items():
+        names.append(k)
+        data.append(v)
+        means.append(sum(v) / len(v))
+
+    fmtstr = f'{{:{len(str(len(names)-1))}}}: {{}}'
+    headindent = len(fmtstr.format(0, names[0]))
+    print(' '*headindent, end='')
+    for idx in range(len(names)):
+        print('\t', idx, end='')
+    print()
+
+    pmatrix = []
+    for i in range(len(data)):
+        print(fmtstr.format(i, names[i]), end='')
+        pmatrix.append([])
+        for j in range(i):
+            pmatrix[-1].append(pmatrix[j][i])
+            print('\t', end='')
+            if pmatrix[j][i] < significance:
+                print('{:.2f}'.format(means[i] / means[j]), end='')
+            else:
+                print('...', end='')
+        print('\t...', end='')
+        pmatrix[-1].append(1)
+        for j in range(i+1, len(data)):
+            pmatrix[-1].append(scipy.stats.ttest_ind(data[i], data[j], equal_var=False).pvalue)
+            print('\t', end='')
+            if pmatrix[-1][-1] < significance:
+                print('{:.2f}'.format(means[i] / means[j]), end='')
+            else:
+                print('...', end='')
+        print()
+
 def run(scripts={}, setup='', args=None, eq=None, vname='result', title=None, **kwargs):
     """Run scripts and time.
 
@@ -179,7 +210,7 @@ def run(scripts={}, setup='', args=None, eq=None, vname='result', title=None, **
         except Exception:
             errored[name] = traceback.format_exc()
         else:
-            if args.gui:
+            if args.gui or args.ttest is not None:
                 results[name] = result
             result.sort()
             mid = len(result) // 2
@@ -222,5 +253,7 @@ def run(scripts={}, setup='', args=None, eq=None, vname='result', title=None, **
         plt.legend()
         plt.show()
 
-    if args.ttest:
-        pass
+    if args.ttest is not None:
+        if not args.ttest:
+            args.ttest = [0.05]
+        pairwise_ttest(results, args.ttest[0])

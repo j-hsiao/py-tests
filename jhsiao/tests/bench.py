@@ -134,7 +134,7 @@ def pairwise_ttest(results, significance=0.05):
             pmatrix[-1].append(pmatrix[j][i])
             print('\t', end='')
             if pmatrix[j][i] < significance:
-                print('{:.2f}'.format(means[i] / means[j]), end='')
+                print('{:.2f}'.format(means[j] / means[i]), end='')
             else:
                 print('...', end='')
         print('\t...', end='')
@@ -143,7 +143,7 @@ def pairwise_ttest(results, significance=0.05):
             pmatrix[-1].append(scipy.stats.ttest_ind(data[i], data[j], equal_var=False).pvalue)
             print('\t', end='')
             if pmatrix[-1][-1] < significance:
-                print('{:.2f}'.format(means[i] / means[j]), end='')
+                print('{:.2f}'.format(means[j] / means[i]), end='')
             else:
                 print('...', end='')
         print()

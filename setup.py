@@ -1,7 +1,7 @@
 from setuptools import setup
 setup(
     name='jhsiao-tests',
-    version='0.0.4',
+    version='0.0.6',
     author='Jason Hsiao',
     author_email='oaishnosaj@gmail.com',
     description='register/run tests',
